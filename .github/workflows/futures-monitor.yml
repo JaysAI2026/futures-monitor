@@ -1,0 +1,48 @@
+name: futures-monitor
+
+on:
+  schedule:
+    # UTC时间，北京时间=UTC+8：03:00→11:00、06:30→14:30、14:00→22:00
+    # 周一至周五（期货周末休市）；GitHub定时可能延迟0~15分钟
+    - cron: '0 3 * * 1-5'
+    - cron: '30 6 * * 1-5'
+    - cron: '0 14 * * 1-5'
+  workflow_dispatch:        # 允许手动触发测试
+    inputs:
+      force:
+        description: '强制测试模式（不校验时点）'
+        required: false
+        default: '0'
+
+permissions:
+  contents: write
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      TZ: Asia/Shanghai     # 让脚本按北京时间判断时点/周末
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 安装依赖
+        run: pip install requests
+
+      - name: 扫描并推送
+        run: python deploy/gh_run.py
+        env:
+          SC_SENDKEY: ${{ secrets.SC_SENDKEY }}
+          FORCE: ${{ github.event.inputs.force || '0' }}
+
+      - name: 状态文件提交回仓库（续接下次运行）
+        run: |
+          git config user.name "monitor-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add scan_state.json iv_meta.json iv_history.json 2>/dev/null || true
+          git commit -m "状态更新 $(date -u +%FT%TZ)" || echo "状态无变化"
+          git push
