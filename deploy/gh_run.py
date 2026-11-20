@@ -6,7 +6,11 @@
   FORCE=1     手动测试模式（不校验时点、不标记已推、不计额度外推送）
 """
 import os
+import sys
 from datetime import datetime
+
+# 以 python deploy/gh_run.py 运行时，把仓库根目录加入模块搜索路径
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import requests
 
