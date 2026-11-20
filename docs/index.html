@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1.4">
+<title>期货/期权监控</title>
+<style>
+:root{--bg:#0f1419;--card:#1a2129;--line:#2a3441;--txt:#dbe4ee;--dim:#8b98a8;
+--green:#4ade80;--red:#f87171;--amber:#fbbf24;--blue:#60a5fa;--purple:#c084fc}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font:14px/1.7 system-ui,sans-serif;padding:14px;max-width:760px;margin:0 auto}
+h1{font-size:18px;margin-bottom:2px}
+.sub{color:var(--dim);font-size:12px;margin-bottom:12px}
+.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px;font-size:12px}
+.badge{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:5px 10px;color:var(--dim)}
+.ctl{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:14px;display:grid;grid-template-columns:1fr;gap:12px}
+.ctl label{font-size:12px;color:var(--dim);display:block;margin-bottom:4px}
+.ctl .val{color:var(--blue);font-weight:bold;font-size:13px;margin-left:6px}
+input[type=range]{width:100%;accent-color:#60a5fa}
+.chk{display:flex;gap:6px;flex-wrap:wrap}
+.chk label{background:#232c38;border:1px solid var(--line);border-radius:8px;padding:4px 11px;font-size:13px;color:var(--txt);cursor:pointer;user-select:none;display:flex;align-items:center;gap:5px}
+.chk input{accent-color:#2563eb}
+.chk label:has(input:checked){background:#1e3a5f;border-color:#60a5fa}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px}
+.card h2{font-size:14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap}
+.card h2 .n{color:var(--dim);font-size:12px;font-weight:normal}
+.grp{margin:8px 0;padding:8px 10px;border-left:3px solid var(--blue);background:#151b23;border-radius:0 8px 8px 0}
+.grp.g2{border-color:var(--purple)}.grp.g3{border-color:var(--amber)}
+.grp .t{color:var(--dim);font-size:12px;margin-bottom:4px}
+.row{padding:7px 2px;border-bottom:1px dashed #232c38;font-size:13px;word-break:break-all}
+.row:last-child{border-bottom:0}
+.tag{display:inline-block;background:#232c38;border-radius:6px;padding:1px 7px;font-size:12px;margin-right:5px}
+.up{color:var(--red)}.dn{color:var(--green)}
+.iv{color:var(--blue);font-family:Consolas,monospace}
+.dim{color:var(--dim)}.mono{font-family:Consolas,monospace}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{color:var(--dim);font-weight:normal;text-align:left;padding:6px 4px;border-bottom:1px solid var(--line);font-size:12px}
+td{padding:6px 4px;border-bottom:1px dashed #232c38;vertical-align:top}
+.bar-out{height:4px;background:#232c38;border-radius:3px;width:70px;margin-top:3px}
+.bar-in{height:4px;border-radius:3px;background:linear-gradient(90deg,#4ade80,#fbbf24,#f87171)}
+footer{color:var(--dim);font-size:11px;margin-top:20px;text-align:center}
+.err{background:#3b2f14;border:1px solid #665013;color:var(--amber);border-radius:10px;padding:10px 14px;margin-bottom:14px}
+</style>
+</head>
+<body>
+<h1>期货/期权监控</h1>
+<div class="sub">布林轨外（周期可选）· 带宽/振幅/百分位可调 · 云端定时快照</div>
+<div class="bar">
+  <span class="badge" id="snap"></span>
+  <span class="badge" id="upd"></span>
+</div>
+<div class="err" id="err" style="display:none"></div>
+<div class="ctl">
+  <div><label>出轨判定周期（默认日线）</label><div class="chk" id="periods"></div></div>
+  <div><label>带宽阈值（第二部分）<span class="val" id="v-band"></span></label>
+    <input type="range" id="s-band" min="1" max="20" step="0.5" value="4"></div>
+  <div><label>带宽 ÷ 日内振幅（第三部分）<span class="val" id="v-mult"></span></label>
+    <input type="range" id="s-mult" min="1" max="20" step="0.5" value="2"></div>
+  <div><label>IV Rank 百分位阈值（第五部分）<span class="val" id="v-pct"></span></label>
+    <input type="range" id="s-pct" min="0" max="100" step="5" value="25"></div>
+</div>
+<div id="app">加载中…</div>
+<footer>数据由GitHub Actions定时快照 · 交易时段约每90分钟更新 · 仅供研究参考</footer>
+<script>
+const PL={"30":"30分钟","120":"2小时","daily":"日线","weekly":"周线","monthly":"月线"};
+let D=null, P=JSON.parse(localStorage.getItem("fmp_periods")||'["daily"]');
+if(!P.length)P=["daily"];
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const num=x=>x==null?'':Number(x).toLocaleString('en-US',{maximumFractionDigits:2});
+
+// 控件初始化
+document.getElementById('periods').innerHTML=
+ Object.entries(PL).map(([k,n])=>`<label><input type="checkbox" value="${k}" ${P.includes(k)?'checked':''}>${n}</label>`).join('');
+document.querySelectorAll('#periods input').forEach(cb=>cb.onchange=()=>{
+  P=[...document.querySelectorAll('#periods input:checked')].map(c=>c.value);
+  if(!P.length){cb.checked=true;P=[cb.value];}
+  localStorage.setItem('fmp_periods',JSON.stringify(P));render();});
+function bindSlider(id,vid,fmt){const s=document.getElementById(id),v=document.getElementById(vid);
+  v.textContent=fmt(s.value);s.oninput=()=>{v.textContent=fmt(s.value)};
+  s.onchange=()=>render();}
+bindSlider('s-band','v-band',x=>x+'%');
+bindSlider('s-mult','v-mult',x=>x+'倍');
+bindSlider('s-pct','v-pct',x=>x+'%');
+
+const tagOf=prod=>{const nm=(D.names||{})[prod];return nm&&nm!==prod?`${nm}(${prod})`:prod;};
+
+function computeBand(thr){      // 【二】带宽百分比清单
+  const rows=[];
+  for(const key in D.results){const[pk,prod]=key.split('|');if(pk!=='daily')continue;
+    const[pos,price,upper,mid,lower]=D.results[key];
+    if(!price||upper==null||lower==null||price<=0)continue;
+    const width=(upper-lower)/price*100;
+    if(width<=thr)rows.push({width,prod,price,tag:tagOf(prod)});}
+  rows.sort((a,b)=>a.width-b.width);return rows;}
+function computeAmp(mult){      // 【三】带宽/日内振幅清单
+  const rows=[];
+  for(const key in D.results){const[pk,prod]=key.split('|');if(pk!=='daily')continue;
+    const[pos,price,upper,mid,lower]=D.results[key];
+    const rng=(D.day_range||{})[prod];if(!rng)continue;
+    const[hi,lo]=rng;const amp=hi-lo;
+    if(!price||upper==null||lower==null||amp<=0)continue;
+    const band=upper-lower;
+    if(band<amp*mult)rows.push({ratio:band/amp,prod,price,band,amp,tag:tagOf(prod)});}
+  rows.sort((a,b)=>a.ratio-b.ratio);return rows;}
+function computeBelow(pct){     // 【五】低波清单
+  return (D.iv_all||[]).filter(it=>it.rank!=null&&it.rank<pct)
+          .sort((a,b)=>a.rank-b.rank);}
+function computeFocus(below){   // 【一】出轨∩低波，按所选周期分组
+  return P.map(pk=>{const items=[];
+    for(const it of below){const v=D.results[pk+'|'+it.prod];
+      if(!v||(v[0]!=='above'&&v[0]!=='below'))continue;
+      items.push({...it,pos:v[0]==='above'?'上轨之上':'下轨之下',price:v[1]});}
+    return{period:PL[pk],count:items.length,items};});}
+function computeSections(){     // 【四】轨外清单（按所选周期）
+  const grouped={};
+  for(const key in D.results){const[pk,prod]=key.split('|');
+    (grouped[pk]=grouped[pk]||[]).push([prod,D.results[key]]);}
+  return P.map(pk=>{const above=[],below=[];
+    for(const[prod,v]of(grouped[pk]||[]).sort((a,b)=>a[0].localeCompare(b[0]))){
+      const[pos,price,upper,mid,lower]=v;
+      const tag=tagOf(prod);
+      if(pos==='above')above.push(`${tag} ${num(price)} | 上轨 ${num(upper)}（高出 ${((price/upper-1)*100).toFixed(2)}%）`);
+      else if(pos==='below')below.push(`${tag} ${num(price)} | 下轨 ${num(lower)}（低出 ${((1-price/lower)*100).toFixed(2)}%）`);}
+    return{period:PL[pk],above,below,desc:`布林(${D.boll_window||20},${D.boll_ndev||2})`};});}
+
+function render(){
+  if(!D)return;
+  const band=computeBand(parseFloat(document.getElementById('s-band').value));
+  const amp=computeAmp(parseFloat(document.getElementById('s-mult').value));
+  const pct=parseFloat(document.getElementById('s-pct').value);
+  const below=computeBelow(pct);
+  const focus=computeFocus(below);
+  const sections=computeSections();
+  const cnt=sections.reduce((s,x)=>s+x.above.length+x.below.length,0);
+  let h='';
+  h+=`<div class="card"><h2>【一】出轨低波品种（出轨 且 IV Rank &lt; ${pct}%）<span class="n">与推送同源</span></h2>`;
+  focus.forEach(g=>{h+=`<div class="grp g2"><div class="t">▶ ${esc(g.period)}出轨（${g.count}个）</div>`;
+    h+=g.count?g.items.map(it=>`<div class="row"><b>${esc(it.name)}</b><span class="dim">(${esc(it.prod)}${esc(it.exp||'')})</span> <span class="tag ${it.pos==='上轨之上'?'up':'dn'}">${esc(it.pos)}</span><span class="tag">IV ${it.iv}%</span><span class="tag">Rank ${it.rank}%</span> <span class="dim mono">现价 ${num(it.price)}${it.dte!=null?' | '+it.dte+'天到期':''}</span></div>`).join(''):'<div class="dim">无</div>';
+    h+='</div>';});
+  h+='</div>';
+  h=`<div class="card"><h2>【二】日线布林带小于 ${document.getElementById('s-band').value}%（共${band.length}个）</h2>`+
+    (band.length?band.map(r=>`<div class="row">${esc(r.tag)} ${num(r.price)} | 带宽 ${r.width.toFixed(2)}%</div>`).join(''):'<div class="dim">无</div>')+'</div>';
+  h+=`<div class="card"><h2>【三】日线布林带小于 ${document.getElementById('s-mult').value}倍振幅（共${amp.length}个）</h2>`+
+    (amp.length?amp.map(r=>`<div class="row">${esc(r.tag)} ${num(r.price)} | 带宽 ${num(r.band)}（日内振幅 ${num(r.amp)}，${r.ratio.toFixed(2)}倍）</div>`).join(''):'<div class="dim">无</div>')+'</div>';
+  h+=`<div class="card"><h2>【四】出轨品种<span class="n">轨外 ${cnt} 项</span></h2>`;
+  sections.forEach(s=>{h+=`<div class="grp"><div class="t">${esc(s.period)}（${esc(s.desc)}）</div>`;
+    s.above.forEach(x=>h+=`<div class="row"><span class="tag up">上轨之上</span>${esc(x)}</div>`);
+    s.below.forEach(x=>h+=`<div class="row"><span class="tag dn">下轨之下</span>${esc(x)}</div>`);
+    if(!s.above.length&&!s.below.length)h+='<div class="dim">无轨外品种</div>';
+    h+='</div>';});
+  h+='</div>';
+  h+=`<div class="card"><h2>【五】低波品种（IV Rank &lt; ${pct}%）<span class="n">共${below.length}个，Rank升序</span></h2>`+
+    (below.length?`<table><tr><th>品种</th><th>IV</th><th>IV Rank</th><th>剩余</th></tr>`+
+      below.map(it=>`<tr><td><b>${esc(it.name)}</b><span class="dim">(${esc(it.prod)}${esc(it.exp||'')})</span></td><td class="iv">${it.iv}%</td><td>${it.rank}%<div class="bar-out"><div class="bar-in" style="width:${Math.min(it.rank,100)}%"></div></div></td><td class="dim">${it.dte!=null?it.dte+'天':''}</td></tr>`).join('')+'</table>'
+      :'<div class="dim">无</div>');
+  if((D.no_rank||[]).length)h+=`<div class="dim" style="margin-top:8px">暂无OpenVlab Rank：${esc(D.no_rank.join(', '))}</div>`;
+  h+='</div>';
+  document.getElementById('app').innerHTML=h;
+}
+async function load(){
+  try{
+    const r=await fetch('data.json?ts='+Date.now());
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    D=await r.json();
+    document.getElementById('snap').textContent='快照时间 '+D.now;
+    document.getElementById('upd').textContent='数据说明：交易时段约每90分钟更新';
+    document.getElementById('err').style.display='none';
+    render();
+  }catch(e){
+    const el=document.getElementById('err');
+    el.style.display='block';
+    el.textContent='数据加载失败：'+e+'（快照可能尚未生成，稍后刷新重试）';
+    document.getElementById('app').textContent='';
+  }
+}
+load();
+</script>
+</body>
+</html>
