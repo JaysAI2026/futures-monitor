@@ -481,7 +481,7 @@ def build_push_message(cfg, state, session):
     本地定时推送与云端云函数共用同一套组装逻辑。
     """
     try:
-        scan_once(cfg, state, session)
+        scan_once(cfg, state, session, notify=False)
     except Exception as e:
         log(f"定时推送前扫描异常: {e}")
 
