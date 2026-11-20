@@ -41,8 +41,8 @@ def _pick_slot(cfg, state, now, force):
         except ValueError:
             continue
         overdue = now_min - (int(h) * 60 + int(m))
-        if force and overdue >= 0:
-            return s
+        if force:
+            return s           # 手动测试：任选未推时点，不限时间
         if 0 <= overdue <= grace + 10:
             return s
     return None
