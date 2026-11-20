@@ -43,7 +43,7 @@ def _pick_slot(cfg, state, now, force):
         overdue = now_min - (int(h) * 60 + int(m))
         if force:
             return s           # 手动测试：任选未推时点，不限时间
-        if 0 <= overdue <= grace + 10:
+        if 0 <= overdue <= max(grace + 10, 90):   # GitHub定时延迟可达约1小时
             return s
     return None
 
