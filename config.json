@@ -1,0 +1,45 @@
+{
+  "symbols": ["RB0", "I0", "CU0"],
+  "period": "daily",
+  "periods": ["120", "daily", "weekly"],
+  "period_minutes": 15,
+  "boll_window": 20,
+  "boll_ndev": 2,
+  "boll_ddof": 0,
+  "realtime_bar": true,
+  "poll_interval_seconds": 30,
+  "notify_cooldown_minutes": 60,
+  "iv": {
+    "percentile": 25,
+    "min_history": 30,
+    "history_days": 60,
+    "min_products": 55,
+    "reserve": 0,
+    "push_time": ""
+  },
+  "push": {
+    "serverchan_sendkey": "SCT472566TdFp2Rrh9UT5VPSG8a8X7lNyB",
+    "pushplus_token": "",
+    "wecom_webhook": ""
+  },
+  "sessions": [
+    ["09:00", "10:15"],
+    ["10:30", "11:30"],
+    ["13:30", "15:00"],
+    ["21:00", "23:00"]
+  ],
+  "scan": {
+    "scan_interval_minutes": 30,
+    "push_times": ["11:00", "14:30", "22:00"],
+    "slot_grace_minutes": 15,
+    "daily_push_limit": 5,
+    "bandwidth_pct": 4,
+    "amp_mult": 2,
+    "daily_summary_time": "",
+    "min_volume": 1000,
+    "min_break_pct": 0,
+    "max_workers": 6,
+    "exclude_products": ["ZC", "WR", "BB", "FB", "JR", "LR", "PM", "RI", "RS", "WH"],
+    "include_products": []
+  }
+}
