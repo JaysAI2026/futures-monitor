@@ -225,6 +225,12 @@ def build_data(periods, band_thr, amp_mult, pct):
         "sections": sections, "band": band, "amp": amp,
         "focus": focus, "below": below, "weak": weak,
         "iv_meta": iv_meta, "status": _status,
+        # 静态页面（GitHub Pages）本地计算所需的原始数据
+        "results": res,
+        "names": _cache["names"],
+        "day_range": _cache["day_range"],
+        "boll_window": cfg.get("boll_window"),
+        "boll_ndev": cfg.get("boll_ndev"),
     }
 
 
