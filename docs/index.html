@@ -69,7 +69,7 @@ footer{color:var(--dim);font-size:11px;margin-top:20px;text-align:center}
 <script>
 // 页面版本检测：浏览器缓存旧版时自动强制刷新（每次部署改VER即可）
 (function(){
-  var VER='v20261121c';
+  var VER='v20261121d';
   try{
     if(location.search.indexOf('v=')<0 && localStorage.getItem('page_ver')!==VER){
       fetch(location.pathname+'?v='+VER).then(function(r){return r.text();})
@@ -103,6 +103,7 @@ bindSlider('s-mult','v-mult',x=>x+'倍');
 bindSlider('s-pct','v-pct',x=>x+'%');
 
 const tagOf=prod=>{const nm=(D.names||{})[prod];return nm&&nm!==prod?`${nm}(${prod})`:prod;};
+const ivOf=prod=>{const it=(D.iv_all||[]).find(x=>x.prod===prod);return it&&it.rank!=null?` | IV ${it.iv}% Rank ${it.rank}%`:' | IV 暂缺';};
 
 function computeBand(thr){      // 【二】带宽百分比清单
   const rows=[];
@@ -159,9 +160,9 @@ function render(){
     h+='</div>';});
   h+='</div>';
   h+=`<div class="card"><h2>【二】日线布林带小于 ${document.getElementById('s-band').value}%（共${band.length}个）</h2>`+
-    (band.length?band.map(r=>`<div class="row">${esc(r.tag)} ${num(r.price)} | 带宽 ${r.width.toFixed(2)}%</div>`).join(''):'<div class="dim">无</div>')+'</div>';
+    (band.length?band.map(r=>`<div class="row">${esc(r.tag)} ${num(r.price)} | 带宽 ${r.width.toFixed(2)}%${ivOf(r.prod)}</div>`).join(''):'<div class="dim">无</div>')+'</div>';
   h+=`<div class="card"><h2>【三】日线布林带小于 ${document.getElementById('s-mult').value}倍振幅（共${amp.length}个）</h2>`+
-    (amp.length?amp.map(r=>`<div class="row">${esc(r.tag)} ${num(r.price)} | 带宽 ${num(r.band)}（日内振幅 ${num(r.amp)}，${r.ratio.toFixed(2)}倍）</div>`).join(''):'<div class="dim">无</div>')+'</div>';
+    (amp.length?amp.map(r=>`<div class="row">${esc(r.tag)} ${num(r.price)} | 带宽 ${num(r.band)}（日内振幅 ${num(r.amp)}，${r.ratio.toFixed(2)}倍）${ivOf(r.prod)}</div>`).join(''):'<div class="dim">无</div>')+'</div>';
   h+=`<div class="card"><h2>【四】出轨品种<span class="n">轨外 ${cnt} 项</span></h2>`;
   sections.forEach(s=>{h+=`<div class="grp"><div class="t">${esc(s.period)}（${esc(s.desc)}）</div>`;
     s.above.forEach(x=>h+=`<div class="row"><span class="tag up">上轨之上</span>${esc(x)}</div>`);
