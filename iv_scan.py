@@ -602,7 +602,7 @@ def build_report(cfg, hist=None, today=None):
             "n": len(series), "name": names.get(prod, prod),
             "date": f"{latest_date[:4]}-{latest_date[4:6]}-{latest_date[6:]}",
         }
-        if rank < pct_threshold:
+        if rank <= pct_threshold:
             below.append(item)
     below.sort(key=lambda x: x["rank"])    # 全局按IV Rank从低到高
     return below, weak, {"latest_date": meta_note, "real_date": latest_date}
