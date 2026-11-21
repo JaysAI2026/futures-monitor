@@ -67,6 +67,21 @@ footer{color:var(--dim);font-size:11px;margin-top:20px;text-align:center}
 <div id="app">加载中…</div>
 <footer>数据由GitHub Actions定时快照 · 交易时段约每90分钟更新 · 仅供研究参考</footer>
 <script>
+// 页面版本检测：浏览器缓存旧版时自动强制刷新（每次部署改VER即可）
+(function(){
+  var VER='v20261121b';
+  try{
+    if(location.search.indexOf('v=')<0 && localStorage.getItem('page_ver')!==VER){
+      fetch(location.pathname+'?v='+VER).then(function(r){return r.text();})
+        .then(function(t){
+          if(t.indexOf(VER)>-1){
+            localStorage.setItem('page_ver',VER);
+            location.replace(location.pathname+'?v='+VER);
+          }
+        }).catch(function(){});
+    }
+  }catch(e){}
+})();
 const PL={"30":"30分钟","120":"2小时","daily":"日线","weekly":"周线","monthly":"月线"};
 let D=null, P=JSON.parse(localStorage.getItem("fmp_periods_v2")||'["120","daily","weekly"]');
 if(!P.length)P=["120","daily","weekly"];
