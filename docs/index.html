@@ -68,8 +68,8 @@ footer{color:var(--dim);font-size:11px;margin-top:20px;text-align:center}
 <footer>数据由GitHub Actions定时快照 · 交易时段约每90分钟更新 · 仅供研究参考</footer>
 <script>
 const PL={"30":"30分钟","120":"2小时","daily":"日线","weekly":"周线","monthly":"月线"};
-let D=null, P=JSON.parse(localStorage.getItem("fmp_periods")||'["daily"]');
-if(!P.length)P=["daily"];
+let D=null, P=JSON.parse(localStorage.getItem("fmp_periods_v2")||'["120","daily","weekly"]');
+if(!P.length)P=["120","daily","weekly"];
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const num=x=>x==null?'':Number(x).toLocaleString('en-US',{maximumFractionDigits:2});
 
@@ -79,7 +79,7 @@ document.getElementById('periods').innerHTML=
 document.querySelectorAll('#periods input').forEach(cb=>cb.onchange=()=>{
   P=[...document.querySelectorAll('#periods input:checked')].map(c=>c.value);
   if(!P.length){cb.checked=true;P=[cb.value];}
-  localStorage.setItem('fmp_periods',JSON.stringify(P));render();});
+  localStorage.setItem('fmp_periods_v2',JSON.stringify(P));render();});
 function bindSlider(id,vid,fmt){const s=document.getElementById(id),v=document.getElementById(vid);
   v.textContent=fmt(s.value);s.oninput=()=>{v.textContent=fmt(s.value)};
   s.onchange=()=>render();}
