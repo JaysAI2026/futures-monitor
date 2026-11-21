@@ -69,7 +69,7 @@ footer{color:var(--dim);font-size:11px;margin-top:20px;text-align:center}
 <script>
 // 页面版本检测：浏览器缓存旧版时自动强制刷新（每次部署改VER即可）
 (function(){
-  var VER='v20261121b';
+  var VER='v20261121c';
   try{
     if(location.search.indexOf('v=')<0 && localStorage.getItem('page_ver')!==VER){
       fetch(location.pathname+'?v='+VER).then(function(r){return r.text();})
@@ -158,7 +158,7 @@ function render(){
     h+=g.count?g.items.map(it=>`<div class="row"><b>${esc(it.name)}</b><span class="dim">(${esc(it.prod)}${esc(it.exp||'')})</span> <span class="tag ${it.pos==='上轨之上'?'up':'dn'}">${esc(it.pos)}</span><span class="tag">IV ${it.iv}%</span><span class="tag">Rank ${it.rank}%</span> <span class="dim mono">现价 ${num(it.price)}${it.dte!=null?' | '+it.dte+'天到期':''}</span></div>`).join(''):'<div class="dim">无</div>';
     h+='</div>';});
   h+='</div>';
-  h=`<div class="card"><h2>【二】日线布林带小于 ${document.getElementById('s-band').value}%（共${band.length}个）</h2>`+
+  h+=`<div class="card"><h2>【二】日线布林带小于 ${document.getElementById('s-band').value}%（共${band.length}个）</h2>`+
     (band.length?band.map(r=>`<div class="row">${esc(r.tag)} ${num(r.price)} | 带宽 ${r.width.toFixed(2)}%</div>`).join(''):'<div class="dim">无</div>')+'</div>';
   h+=`<div class="card"><h2>【三】日线布林带小于 ${document.getElementById('s-mult').value}倍振幅（共${amp.length}个）</h2>`+
     (amp.length?amp.map(r=>`<div class="row">${esc(r.tag)} ${num(r.price)} | 带宽 ${num(r.band)}（日内振幅 ${num(r.amp)}，${r.ratio.toFixed(2)}倍）</div>`).join(''):'<div class="dim">无</div>')+'</div>';
