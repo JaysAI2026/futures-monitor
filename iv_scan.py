@@ -545,8 +545,15 @@ def build_report(cfg, hist=None, today=None):
     meta_m = _load_meta()
     now_dt = datetime.now()
     rank_slot = now_dt.strftime("%Y-%m-%d") + ("" if now_dt.hour < 17 else "_pm")
-    ranks = (meta_m.get("ranks") or {}).get(rank_slot) \
-        or (meta_m.get("ranks") or {}).get(now_dt.strftime("%Y-%m-%d")) or {}
+    ranks_all = meta_m.get("ranks") or {}
+    ranks = ranks_all.get(rank_slot) \
+        or ranks_all.get(now_dt.strftime("%Y-%m-%d")) or {}
+    if not ranks:
+        # 非交易日/当日Rank未发布：回退最近一个有数据的槽
+        for _slot in sorted(ranks_all.keys(), reverse=True):
+            if ranks_all.get(_slot):
+                ranks = ranks_all[_slot]
+                break
     fronts = (meta_m.get("fronts") or {}).get(latest_date) or {}
     exp_map = (meta_m.get("expiries") or {}).get("map") or {}
     today_dt = datetime.now()
